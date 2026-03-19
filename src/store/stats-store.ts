@@ -9,13 +9,23 @@ interface DifficultyStats {
   draws: number;
 }
 
+interface LocalStats {
+  xWins: number;
+  oWins: number;
+  draws: number;
+}
+
+type LocalResult = 'x_win' | 'o_win' | 'draw';
+
 interface StatsStore {
   stats: Record<Difficulty, DifficultyStats>;
+  localStats: LocalStats;
   totalGames: number;
 
   recordWin: (difficulty: Difficulty) => void;
   recordLoss: (difficulty: Difficulty) => void;
   recordDraw: (difficulty: Difficulty) => void;
+  recordLocalResult: (result: LocalResult) => void;
   resetStats: () => void;
 }
 
@@ -25,10 +35,17 @@ const emptyStats = (): Record<Difficulty, DifficultyStats> => ({
   hard: { wins: 0, losses: 0, draws: 0 },
 });
 
+const emptyLocalStats = (): LocalStats => ({
+  xWins: 0,
+  oWins: 0,
+  draws: 0,
+});
+
 export const useStatsStore = create<StatsStore>()(
   persist(
     (set, get) => ({
       stats: emptyStats(),
+      localStats: emptyLocalStats(),
       totalGames: 0,
 
       recordWin: (difficulty) =>
@@ -67,8 +84,19 @@ export const useStatsStore = create<StatsStore>()(
           totalGames: state.totalGames + 1,
         })),
 
+      recordLocalResult: (result) =>
+        set((state) => ({
+          localStats: {
+            ...state.localStats,
+            xWins: state.localStats.xWins + (result === 'x_win' ? 1 : 0),
+            oWins: state.localStats.oWins + (result === 'o_win' ? 1 : 0),
+            draws: state.localStats.draws + (result === 'draw' ? 1 : 0),
+          },
+          totalGames: state.totalGames + 1,
+        })),
+
       resetStats: () =>
-        set({ stats: emptyStats(), totalGames: 0 }),
+        set({ stats: emptyStats(), localStats: emptyLocalStats(), totalGames: 0 }),
     }),
     {
       name: 'cheddr-stats',

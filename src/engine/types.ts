@@ -48,12 +48,7 @@ export interface AIPersonality {
   readonly thinkingDelay: readonly [min: number, max: number];
 }
 
-export interface GameState {
-  readonly board: Board;
-  readonly currentPlayer: Player;
-  readonly result: GameResult;
-  readonly moveCount: number;
-}
+export type GameMode = 'ai' | 'local' | 'online';
 
 export const EMPTY_BOARD: Board = [
   null, null, null,

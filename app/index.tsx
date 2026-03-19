@@ -14,11 +14,14 @@ import { colors } from '../src/theme/colors';
 import { typography } from '../src/theme/typography';
 import { spacing } from '../src/theme/spacing';
 import { useStatsStore } from '../src/store/stats-store';
+import { useGameStore } from '../src/store/game-store';
 import { animations } from '../src/theme/animations';
 
 export default function HomeScreen() {
   const totalGames = useStatsStore((s) => s.totalGames);
   const stats = useStatsStore((s) => s.stats);
+  const setGameMode = useGameStore((s) => s.setGameMode);
+  const resetGame = useGameStore((s) => s.resetGame);
 
   const totalWins = stats.easy.wins + stats.medium.wins + stats.hard.wins;
   const totalLosses = stats.easy.losses + stats.medium.losses + stats.hard.losses;
@@ -61,6 +64,17 @@ export default function HomeScreen() {
     opacity: statsOpacity.value,
   }));
 
+  const handleVsAI = () => {
+    setGameMode('ai');
+    router.push('/difficulty');
+  };
+
+  const handleLocal2P = () => {
+    setGameMode('local');
+    resetGame();
+    router.push('/game');
+  };
+
   return (
     <GradientBackground>
       <View style={styles.container}>
@@ -75,16 +89,30 @@ export default function HomeScreen() {
 
         <Animated.View style={[styles.buttonGroup, buttonStyle]}>
           <Button
-            title="Play"
-            onPress={() => router.push('/difficulty')}
+            title="vs AI"
+            onPress={handleVsAI}
             size="lg"
-            style={styles.playButton}
+            style={styles.mainButton}
+          />
+          <Button
+            title="Local 2P"
+            onPress={handleLocal2P}
+            variant="secondary"
+            size="lg"
+            style={styles.mainButton}
+          />
+          <Button
+            title="Online (Coming Soon)"
+            onPress={() => {}}
+            variant="secondary"
+            size="md"
+            disabled
           />
           <Button
             title="Settings"
             onPress={() => router.push('/settings')}
-            variant="secondary"
-            size="md"
+            variant="ghost"
+            size="sm"
           />
         </Animated.View>
 
@@ -135,7 +163,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 280,
   },
-  playButton: {
+  mainButton: {
     width: '100%',
   },
   statsPreview: {

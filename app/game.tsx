@@ -4,27 +4,29 @@ import { router } from 'expo-router';
 import { GradientBackground } from '../src/components/GradientBackground';
 import { Board } from '../src/components/Board';
 import { GameHeader } from '../src/components/GameHeader';
+import { LocalGameHeader } from '../src/components/LocalGameHeader';
 import { AIAvatar } from '../src/components/AIAvatar';
 import { Button } from '../src/components/Button';
 import { CelebrationOverlay } from '../src/components/CelebrationOverlay';
 import { useGameStore } from '../src/store/game-store';
 import { useGameLoop } from '../src/hooks/useGameLoop';
-import { colors } from '../src/theme/colors';
+import { useLocalGameLoop } from '../src/hooks/useLocalGameLoop';
 import { spacing } from '../src/theme/spacing';
 import { HUMAN_PLAYER } from '../src/constants';
 
 export default function GameScreen() {
-  const { result, personality, resetGame } = useGameStore();
+  const { result, personality, gameMode, resetGame } = useGameStore();
 
-  // Redirect if no personality selected
+  // Redirect if AI mode with no personality selected
   useEffect(() => {
-    if (!personality) {
+    if (gameMode === 'ai' && !personality) {
       router.replace('/difficulty');
     }
-  }, [personality]);
+  }, [personality, gameMode]);
 
-  // Run the AI game loop
+  // Run the appropriate game loop
   useGameLoop();
+  useLocalGameLoop();
 
   const isGameOver = result.status !== 'playing';
 
@@ -36,6 +38,8 @@ export default function GameScreen() {
       : result.status === 'draw'
         ? 'draw'
         : 'win';
+
+  const backDestination = gameMode === 'ai' ? '/difficulty' : '/';
 
   return (
     <GradientBackground>
@@ -52,8 +56,8 @@ export default function GameScreen() {
           />
         </View>
 
-        <AIAvatar />
-        <GameHeader />
+        {gameMode === 'ai' && <AIAvatar />}
+        {gameMode === 'ai' ? <GameHeader /> : <LocalGameHeader />}
         <Board />
 
         {isGameOver && (
@@ -65,8 +69,8 @@ export default function GameScreen() {
               style={styles.playAgainButton}
             />
             <Button
-              title="Change Opponent"
-              onPress={() => router.replace('/difficulty')}
+              title={gameMode === 'ai' ? 'Change Opponent' : 'Back to Menu'}
+              onPress={() => router.replace(backDestination)}
               variant="secondary"
               size="md"
             />

@@ -91,6 +91,7 @@ export default function DifficultyScreen() {
 
   const handleStart = () => {
     if (!currentPersonality) return;
+    useGameStore.getState().setGameMode('ai');
     resetGame();
     router.push('/game');
   };

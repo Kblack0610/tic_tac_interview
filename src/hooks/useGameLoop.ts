@@ -8,11 +8,12 @@ import { useHaptics } from './useHaptics';
 /**
  * Orchestrates AI turns with artificial thinking delay.
  * Also records game results to stats store.
+ * Only active when gameMode === 'ai'.
  */
 export function useGameLoop() {
   const {
-    board, currentPlayer, result, personality,
-    playAIMove, setAIThinking,
+    board, currentPlayer, result, personality, gameMode,
+    playMoveForPlayer, setAIThinking,
   } = useGameStore();
   const { recordWin, recordLoss, recordDraw } = useStatsStore();
   const haptics = useHaptics();
@@ -21,6 +22,7 @@ export function useGameLoop() {
 
   // AI turn
   useEffect(() => {
+    if (gameMode !== 'ai') return;
     if (result.status !== 'playing') return;
     if (currentPlayer !== AI_PLAYER) return;
     if (!personality) return;
@@ -30,16 +32,17 @@ export function useGameLoop() {
     const delay = getThinkingDelay(personality);
     timerRef.current = setTimeout(() => {
       const move = getAIMove(board, AI_PLAYER, personality);
-      playAIMove(move);
+      playMoveForPlayer(move, AI_PLAYER);
     }, delay);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [board, currentPlayer, result.status, personality]);
+  }, [board, currentPlayer, result.status, personality, gameMode]);
 
   // Record results
   useEffect(() => {
+    if (gameMode !== 'ai') return;
     if (result.status === 'playing') {
       resultHandled.current = false;
       return;
@@ -61,5 +64,5 @@ export function useGameLoop() {
       recordDraw(personality.difficulty);
       haptics.medium();
     }
-  }, [result, personality]);
+  }, [result, personality, gameMode]);
 }

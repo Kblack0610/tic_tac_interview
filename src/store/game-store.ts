@@ -3,7 +3,8 @@ import {
   AIPersonality, Board, CellIndex, EMPTY_BOARD,
   GameResult, Player,
 } from '../engine/types';
-import { applyMove, evaluateBoard } from '../engine/board';
+import { GameMode } from '../engine/types';
+import { applyMove, evaluateBoard, opponent } from '../engine/board';
 import { AI_PLAYER, HUMAN_PLAYER } from '../constants';
 
 interface GameStore {
@@ -14,11 +15,14 @@ interface GameStore {
   personality: AIPersonality | null;
   isAIThinking: boolean;
   lastMove: CellIndex | null;
+  gameMode: GameMode;
+  startTime: number | null;
 
   // Actions
   setPersonality: (personality: AIPersonality) => void;
+  setGameMode: (mode: GameMode) => void;
   playMove: (index: CellIndex) => void;
-  playAIMove: (index: CellIndex) => void;
+  playMoveForPlayer: (index: CellIndex, player: Player) => void;
   setAIThinking: (thinking: boolean) => void;
   resetGame: () => void;
 }
@@ -31,38 +35,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
   personality: null,
   isAIThinking: false,
   lastMove: null,
+  gameMode: 'ai',
+  startTime: null,
 
   setPersonality: (personality) => set({ personality }),
+  setGameMode: (mode) => set({ gameMode: mode }),
 
   playMove: (index) => {
-    const { board, currentPlayer, result } = get();
+    const { board, currentPlayer, result, gameMode } = get();
     if (result.status !== 'playing') return;
     if (board[index] !== null) return;
-    if (currentPlayer !== HUMAN_PLAYER) return;
 
-    const newBoard = applyMove(board, index, HUMAN_PLAYER);
-    const newResult = evaluateBoard(newBoard);
-
-    set({
-      board: newBoard,
-      currentPlayer: AI_PLAYER,
-      result: newResult,
-      moveCount: get().moveCount + 1,
-      lastMove: index,
-    });
+    if (gameMode === 'ai') {
+      if (currentPlayer !== HUMAN_PLAYER) return;
+      const newBoard = applyMove(board, index, HUMAN_PLAYER);
+      const newResult = evaluateBoard(newBoard);
+      set({
+        board: newBoard,
+        currentPlayer: AI_PLAYER,
+        result: newResult,
+        moveCount: get().moveCount + 1,
+        lastMove: index,
+      });
+    } else if (gameMode === 'local') {
+      const newBoard = applyMove(board, index, currentPlayer);
+      const newResult = evaluateBoard(newBoard);
+      set({
+        board: newBoard,
+        currentPlayer: opponent(currentPlayer),
+        result: newResult,
+        moveCount: get().moveCount + 1,
+        lastMove: index,
+      });
+    }
+    // 'online' mode: handled in future phase
   },
 
-  playAIMove: (index) => {
+  playMoveForPlayer: (index, player) => {
     const { board, result } = get();
     if (result.status !== 'playing') return;
     if (board[index] !== null) return;
 
-    const newBoard = applyMove(board, index, AI_PLAYER);
+    const newBoard = applyMove(board, index, player);
     const newResult = evaluateBoard(newBoard);
 
     set({
       board: newBoard,
-      currentPlayer: HUMAN_PLAYER,
+      currentPlayer: opponent(player),
       result: newResult,
       moveCount: get().moveCount + 1,
       isAIThinking: false,
@@ -80,5 +99,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveCount: 0,
       isAIThinking: false,
       lastMove: null,
+      startTime: Date.now(),
     }),
 }));
