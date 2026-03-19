@@ -17,3 +17,9 @@ export const AI_TURN_MIN_DELAY = 300;
 /** Game */
 export const HUMAN_PLAYER = 'X' as const;
 export const AI_PLAYER = 'O' as const;
+
+/** Backend API */
+export const API_BASE_URL =
+  typeof __DEV__ !== 'undefined' && __DEV__
+    ? 'http://localhost:8080'
+    : 'https://cheddr-api.kblab.me';

@@ -4,15 +4,16 @@ import { useStatsStore } from '../store/stats-store';
 import { getAIMove, getThinkingDelay } from '../engine/ai';
 import { AI_PLAYER, HUMAN_PLAYER } from '../constants';
 import { useHaptics } from './useHaptics';
+import { postScore } from '../services/api';
 
 /**
  * Orchestrates AI turns with artificial thinking delay.
- * Also records game results to stats store.
+ * Also records game results to stats store and syncs to backend.
  * Only active when gameMode === 'ai'.
  */
 export function useGameLoop() {
   const {
-    board, currentPlayer, result, personality, gameMode,
+    board, currentPlayer, result, personality, gameMode, moveCount, startTime,
     playMoveForPlayer, setAIThinking,
   } = useGameStore();
   const { recordWin, recordLoss, recordDraw } = useStatsStore();
@@ -52,17 +53,31 @@ export function useGameLoop() {
 
     resultHandled.current = true;
 
+    let scoreResult: 'win' | 'loss' | 'draw' = 'draw';
+
     if (result.status === 'win') {
       if (result.winner === HUMAN_PLAYER) {
         recordWin(personality.difficulty);
         haptics.success();
+        scoreResult = 'win';
       } else {
         recordLoss(personality.difficulty);
         haptics.error();
+        scoreResult = 'loss';
       }
     } else if (result.status === 'draw') {
       recordDraw(personality.difficulty);
       haptics.medium();
     }
+
+    // Fire-and-forget score sync
+    const durationMs = startTime ? Date.now() - startTime : 0;
+    postScore({
+      result: scoreResult,
+      difficulty: personality.difficulty,
+      opponent: personality.id,
+      move_count: moveCount,
+      duration_ms: durationMs,
+    });
   }, [result, personality, gameMode]);
 }
