@@ -175,6 +175,58 @@ cd backend && go test ./...  # Backend tests
 | Orchestration | Kubernetes | Deployment, service, ingress, PVC |
 | CI/CD | GitHub Actions | Backend test + build + push to GHCR |
 
+## Local Development
+
+### Frontend only (AI + Local 2P — no backend needed)
+
+```bash
+npm install
+npx expo start
+```
+
+Scan the QR code with Expo Go, press `w` for web, or press `a` for Android emulator.
+
+### Frontend + Backend (all modes including Online)
+
+```bash
+# Terminal 1 — backend
+cd backend
+go run ./cmd/server           # starts on :8080
+
+# Terminal 2 — frontend
+npm install
+npx expo start
+```
+
+The app auto-connects to `localhost:8080` in dev mode. For production it uses `cheddr-api.kblab.me`.
+
+### Running tests
+
+```bash
+npm test                      # 42 frontend engine tests
+cd backend && go test ./...   # backend tests
+```
+
+### Building Android APK locally
+
+```bash
+npx expo prebuild --platform android --clean
+cd android && ./gradlew assembleDebug
+# APK at android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+## Branches
+
+| Branch | Tag | Description |
+|--------|-----|-------------|
+| `v1.0.0` | `v1.0.0` | Original single-player AI game — 3 opponents, minimax engine, animated SVG marks, 42 tests |
+| `v1.5.0` | `v1.5.0` | Adds local 2-player mode — pass-and-play, `LocalGameHeader`, `useLocalGameLoop` |
+| `v2.0.0` | `v2.0.0` | Adds Go backend — chi router, SQLite, score API, fire-and-forget sync from client |
+| `v2.0.5_experimental_websocket` | `v2.0.5-experimental` | **Experimental** — WebSocket online multiplayer, lobby screen, K8s deployment, backend CI/CD |
+| `master` | — | Latest: docs, screenshots, Android APK CI workflow |
+
+> **Note**: Online multiplayer (`v2.0.5_experimental_websocket`) is experimental. The button shows "Coming Soon" on the home screen. AI and Local 2P modes are fully stable on all branches from `v1.5.0` onward.
+
 ## Deployment
 
 The backend runs on Kubernetes with the following setup:
@@ -185,6 +237,27 @@ The backend runs on Kubernetes with the following setup:
 - **Storage**: PersistentVolumeClaim for SQLite data
 - **CI/CD**: Push to `master` (backend paths) triggers test → Docker build → GHCR push
 - **Manifests**: Apply with `kubectl apply -k k8s/`
+
+## Roadmap
+
+### Near-term
+- [ ] Migrate from npm to pnpm
+- [ ] Enable Online multiplayer button (remove "Coming Soon" gate)
+- [ ] Extract shared game engine as standalone package (`@cheddr/engine`) — reusable across client + backend
+- [ ] Add backend integration tests with real WebSocket connections
+
+### Features
+- [ ] **Behavior Tree AI** — personality-driven decision trees (Aggressive, Defensive, Chaotic, Mentor)
+- [ ] **ELO Ratings** — track player skill across online matches, matchmaking by bracket
+- [ ] **Replays** — record move history server-side, review past games move-by-move
+- [ ] **Spectator Mode** — read-only WebSocket connections to watch live games
+- [ ] **Rematch flow** — seamless rematch in online mode without returning to lobby
+
+### Infrastructure
+- [ ] Migrate Android APK CI from self-hosted macOS to EAS Build
+- [ ] Add iOS build workflow
+- [ ] Helm chart for backend deployment
+- [ ] Observability — structured logging, Prometheus metrics, Grafana dashboard
 
 ## License
 

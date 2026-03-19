@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-03-19
+## [2.0.5-experimental] - 2026-03-19
 
 ### Added
 - WebSocket-based online multiplayer with room codes
@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `playMove` branches by mode with `onlineMoveCallback` for WS moves
 - Backend upgraded from REST-only to REST + WebSocket on same server
 
-## [1.2.0] - 2026-03-18
+## [2.0.0] - 2026-03-18
 
 ### Added
 - Go backend with chi router and SQLite (pure-Go `modernc.org/sqlite`)
@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend Dockerfile (multi-stage, scratch-based)
 - Backend Makefile for local dev
 
-## [1.1.0] - 2026-03-17
+## [1.5.0] - 2026-03-17
 
 ### Added
 - Local 2-player multiplayer mode

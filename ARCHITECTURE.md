@@ -153,6 +153,11 @@ Tag push (v*) → Node setup → Expo prebuild → Gradle assembleDebug → GitH
 
 ## Future Roadmap
 
+See [README.md](README.md#roadmap) for the full task list. Architecture-relevant items:
+
+### Shared Engine Package
+Extract `src/engine/` into a standalone `@cheddr/engine` package. The Go backend currently reimplements move validation — a shared TypeScript engine (compiled to WASM or used via embedded V8) would eliminate the duplication and guarantee client/server parity.
+
 ### Behavior Tree AI
 Replace probability-weighted random with personality-driven decision trees:
 - **Aggressive**: Always takes center/corners, forks when possible
@@ -160,11 +165,5 @@ Replace probability-weighted random with personality-driven decision trees:
 - **Chaotic**: Random but with "aha moments" where it suddenly plays optimally
 - **Mentor**: Deliberately leaves openings for the player to find, comments on good/bad moves
 
-### ELO Ratings
-Track player skill across online matches with an ELO rating system. Matchmaking by skill bracket.
-
-### Replays
-Record move history server-side. Players can review past games move-by-move.
-
 ### Spectator Mode
-Allow third parties to watch live games via read-only WebSocket connections.
+Requires a new WebSocket message type (`spectate_room`) and a read-only client list per room in the Hub. Spectators receive `move_made` and `game_over` but cannot send `move`.
