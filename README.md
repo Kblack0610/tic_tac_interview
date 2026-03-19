@@ -1,4 +1,4 @@
-# Cheddr Tic-Tac-Toe
+# Tic-Tac-Toe
 
 A polished tic-tac-toe app with three game modes — AI opponents, local 2-player, and online multiplayer via WebSocket — backed by a Go API with score tracking and Kubernetes deployment.
 
