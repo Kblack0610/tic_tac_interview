@@ -14,8 +14,11 @@ export function Board() {
     board, result, isAIThinking, lastMove, playMove,
   } = useGameStore();
 
-  const boardWidth = Math.min(screenWidth - 48, 380);
-  const cellSize = (boardWidth - BOARD_PADDING * 2 - CELL_GAP * (BOARD_SIZE - 1)) / BOARD_SIZE;
+  const boardWidth = Math.min(screenWidth * 0.85, 320);
+  const cellSize = Math.floor(
+    (boardWidth - BOARD_PADDING * 2 - CELL_GAP * (BOARD_SIZE - 1)) / BOARD_SIZE,
+  );
+  const actualBoardWidth = cellSize * BOARD_SIZE + CELL_GAP * (BOARD_SIZE - 1) + BOARD_PADDING * 2;
 
   const winningCells = useMemo(() => {
     if (result.status === 'win') {
@@ -27,22 +30,30 @@ export function Board() {
   const isGameOver = result.status !== 'playing';
   const disabled = isGameOver || isAIThinking;
 
+  // Build rows explicitly for reliable layout
+  const rows = [0, 1, 2].map((row) =>
+    [0, 1, 2].map((col) => row * 3 + col),
+  );
+
   return (
-    <View style={[styles.container, { width: boardWidth, height: boardWidth }]}>
-      <View style={styles.grid}>
-        {board.map((value, i) => (
-          <Cell
-            key={i}
-            index={i as CellIndex}
-            value={value}
-            size={cellSize}
-            disabled={disabled}
-            isWinning={winningCells.has(i)}
-            isLastMove={lastMove === i}
-            onPress={playMove}
-          />
-        ))}
-      </View>
+    <View style={[styles.container, { width: actualBoardWidth }]}>
+      {rows.map((rowIndices, rowIdx) => (
+        <View key={rowIdx} style={[styles.row, rowIdx < 2 && { marginBottom: CELL_GAP }]}>
+          {rowIndices.map((cellIdx, colIdx) => (
+            <View key={cellIdx} style={colIdx < 2 ? { marginRight: CELL_GAP } : undefined}>
+              <Cell
+                index={cellIdx as CellIndex}
+                value={board[cellIdx]}
+                size={cellSize}
+                disabled={disabled}
+                isWinning={winningCells.has(cellIdx)}
+                isLastMove={lastMove === cellIdx}
+                onPress={playMove}
+              />
+            </View>
+          ))}
+        </View>
+      ))}
       {result.status === 'win' && (
         <WinLine
           line={result.line}
@@ -62,10 +73,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: BOARD_PADDING,
     alignSelf: 'center',
+    overflow: 'hidden',
   },
-  grid: {
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: CELL_GAP,
   },
 });

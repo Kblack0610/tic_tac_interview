@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { GradientBackground } from '../src/components/GradientBackground';
 import { Board } from '../src/components/Board';
@@ -39,7 +39,10 @@ export default function GameScreen() {
 
   return (
     <GradientBackground>
-      <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.topBar}>
           <Button
             title="← Back"
@@ -69,7 +72,7 @@ export default function GameScreen() {
             />
           </View>
         )}
-      </View>
+      </ScrollView>
 
       <CelebrationOverlay
         visible={isGameOver}
@@ -81,11 +84,11 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing['4xl'],
     paddingBottom: spacing['2xl'],
-    gap: spacing.xl,
+    gap: spacing.lg,
     alignItems: 'center',
   },
   topBar: {
