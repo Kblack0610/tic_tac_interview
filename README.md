@@ -2,6 +2,10 @@
 
 A polished tic-tac-toe app with three game modes — AI opponents, local 2-player, and online multiplayer via WebSocket — backed by a Go API with score tracking and Kubernetes deployment.
 
+<p align="center">
+  <img src="assets/screenshot-home.png" alt="Home screen" width="300" />
+</p>
+
 ## Quick Start
 
 ```bash
