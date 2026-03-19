@@ -3,7 +3,11 @@
 A polished tic-tac-toe app with three game modes — AI opponents, local 2-player, and online multiplayer via WebSocket — backed by a Go API with score tracking and Kubernetes deployment.
 
 <p align="center">
-  <img src="assets/screenshot-home.png" alt="Home screen" width="300" />
+  <img src="assets/screenshot-home.png" alt="Home screen" width="250" />
+  &nbsp;&nbsp;
+  <img src="assets/screenshot-difficulty.png" alt="AI opponent selection" width="250" />
+  &nbsp;&nbsp;
+  <img src="assets/screenshot-game.png" alt="Game in progress" width="250" />
 </p>
 
 ## Quick Start
