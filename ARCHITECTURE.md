@@ -4,7 +4,7 @@
 
 This project demonstrates how I approach building mobile applications at scale: **separation of concerns, testable pure logic, and premium visual polish**.
 
-The game engine contains zero framework dependencies — every function is a pure transformation from state to state. This pattern scales to production: the same engine could run on a Go backend for server-authoritative multiplayer, in a Web Worker for non-blocking AI computation, or in a test suite without any DOM or React Native runtime.
+The game engine contains zero framework dependencies — every function is a pure transformation from state to state. This same engine runs on the client for AI and local modes, and its logic is mirrored on the Go backend for server-authoritative online multiplayer. The engine can also run in a Web Worker for non-blocking AI computation, or in a test suite without any DOM or React Native runtime.
 
 ## Engine Architecture
 
@@ -45,14 +45,75 @@ Three isolated Zustand stores, each with single responsibility:
 
 | Store | Persisted | Purpose |
 |-------|-----------|---------|
-| `game-store` | No | Current board, turns, AI state |
+| `game-store` | No | Current board, turns, mode (`ai`/`local`/`online`), online state |
 | `settings-store` | Yes | Sound, haptics preferences |
-| `stats-store` | Yes | Lifetime win/loss/draw by difficulty |
+| `stats-store` | Yes | Lifetime win/loss/draw by difficulty and mode |
 
 Zustand was chosen over Context + useReducer for:
 - No provider nesting / re-render cascading
 - Built-in persist middleware with AsyncStorage
 - Selectors for granular subscriptions
+
+## Multiplayer Architecture
+
+### Three Game Modes
+
+The app supports three modes via the `GameMode` type (`ai | local | online`), each with a dedicated hook:
+
+| Mode | Hook | Store Interaction |
+|------|------|-------------------|
+| AI | `useGameLoop` | `playMove('ai')` — engine computes AI response |
+| Local 2P | `useLocalGameLoop` | `playMove('local')` — alternates X/O on same device |
+| Online | `useOnlineGame` | `playMove('online')` — sends move via `onlineMoveCallback` |
+
+### Hook-Per-Mode Pattern
+
+Each hook encapsulates its mode's lifecycle:
+- **`useGameLoop`**: Triggers AI move after human plays, with configurable delay for "thinking" feel
+- **`useLocalGameLoop`**: Pure turn alternation, no AI computation
+- **`useOnlineGame`**: Manages WebSocket connection, room state, opponent moves, and disconnect handling
+
+### Store Mode Branching
+
+The game store's `playMove` action branches by mode:
+- `ai`/`local`: Apply move directly to board, check result
+- `online`: Apply move locally for instant feedback, then invoke `onlineMoveCallback` to send via WebSocket. Server broadcasts to opponent, who applies via `move_made` handler.
+
+## Backend Architecture
+
+### Router Design
+
+Chi router with grouped middleware — REST endpoints get a 30-second timeout, while the WebSocket endpoint (`/api/ws`) runs without timeout for long-lived connections.
+
+```
+/api
+  GET  /health              # Liveness probe
+  GET  /scores              # List scores (with timeout)
+  POST /scores              # Submit score (with timeout)
+  GET  /scores/leaderboard  # Aggregated stats (with timeout)
+  GET  /ws                  # WebSocket (no timeout)
+```
+
+### SQLite Layer
+
+Uses `modernc.org/sqlite` — a pure-Go SQLite implementation (no CGO). This means:
+- Single static binary, no shared library dependencies
+- Scratch-based Docker image (< 15MB)
+- WAL mode for concurrent reads during writes
+
+### WebSocket Hub Pattern
+
+The real-time multiplayer uses a hub-and-spoke architecture:
+
+- **Hub goroutine**: Central dispatcher — receives messages from clients, manages rooms, broadcasts state
+- **Client**: Two goroutines per connection — `readPump` (client → hub) and `writePump` (hub → client)
+- **Room**: Game state container with two client slots, board state, and turn tracking
+
+Room lifecycle:
+1. `create_room` → Hub creates room with 4-char code, adds creator as Player X
+2. `join_room` → Hub finds room by code, adds joiner as Player O, sends `game_start` to both
+3. `move` → Hub validates (correct turn, valid cell), applies move, broadcasts `move_made` or `game_over`
+4. Disconnect → Hub sends `opponent_left`, cleans up room after both leave
 
 ## Animation System
 
@@ -73,10 +134,24 @@ The color palette draws from sports wagering UIs (DraftKings, FanDuel) — dark 
 - **Player O**: Warm pink (#F472B6) — energetic, aggressive
 - **Win/Loss**: Emerald (#34D399) / Ruby (#F87171) — universal
 
-## Future Roadmap
+## Infrastructure
 
-### WebSocket Multiplayer
-Room-based real-time play via a lightweight Express + ws server (~150 lines). Player 1 creates a room, gets a 4-character code, Player 2 joins. The same game engine validates moves on both client and server, preventing desync.
+### Kubernetes Strategy
+
+Single-replica deployment with:
+- Resource limits (64Mi–256Mi memory, 50m–200m CPU)
+- Liveness/readiness probes on `/api/health`
+- PersistentVolumeClaim for SQLite data directory
+- Traefik ingress with cert-manager for automatic Let's Encrypt TLS
+
+### CI/CD Pipeline
+
+```
+Push to master (backend/**) → Go test → Docker build (arm64) → Push to GHCR
+Tag push (v*) → Node setup → Expo prebuild → Gradle assembleDebug → GitHub Release with APK
+```
+
+## Future Roadmap
 
 ### Behavior Tree AI
 Replace probability-weighted random with personality-driven decision trees:
@@ -85,10 +160,11 @@ Replace probability-weighted random with personality-driven decision trees:
 - **Chaotic**: Random but with "aha moments" where it suddenly plays optimally
 - **Mentor**: Deliberately leaves openings for the player to find, comments on good/bad moves
 
-### Server-Authoritative Game State
-Move the source of truth to the Go backend — clients send move intents, server validates and broadcasts. This prevents cheating and enables features like move history, replays, and ELO ratings.
+### ELO Ratings
+Track player skill across online matches with an ELO rating system. Matchmaking by skill bracket.
 
-### Infrastructure
-- Docker multi-stage builds (Go binary + static Expo web export)
-- Kubernetes manifests for horizontal scaling
-- GitHub Actions CI/CD with test gates
+### Replays
+Record move history server-side. Players can review past games move-by-move.
+
+### Spectator Mode
+Allow third parties to watch live games via read-only WebSocket connections.
