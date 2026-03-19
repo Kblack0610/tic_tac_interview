@@ -102,11 +102,13 @@ export default function HomeScreen() {
             style={styles.mainButton}
           />
           <Button
-            title="Online (Coming Soon)"
-            onPress={() => {}}
+            title="Online"
+            onPress={() => {
+              setGameMode('online');
+              router.push('/lobby');
+            }}
             variant="secondary"
             size="md"
-            disabled
           />
           <Button
             title="Settings"

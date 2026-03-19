@@ -18,13 +18,21 @@ interface GameStore {
   gameMode: GameMode;
   startTime: number | null;
 
+  // Online multiplayer state
+  roomCode: string | null;
+  playerMark: Player | null;
+  opponentConnected: boolean;
+  onlineMoveCallback: ((index: CellIndex) => void) | null;
+
   // Actions
   setPersonality: (personality: AIPersonality) => void;
   setGameMode: (mode: GameMode) => void;
   playMove: (index: CellIndex) => void;
   playMoveForPlayer: (index: CellIndex, player: Player) => void;
+  applyRemoteMove: (index: CellIndex, player: Player) => void;
   setAIThinking: (thinking: boolean) => void;
   resetGame: () => void;
+  setOnlineState: (state: { roomCode?: string | null; playerMark?: Player | null; opponentConnected?: boolean; onlineMoveCallback?: ((index: CellIndex) => void) | null }) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -37,6 +45,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lastMove: null,
   gameMode: 'ai',
   startTime: null,
+
+  // Online state
+  roomCode: null,
+  playerMark: null,
+  opponentConnected: false,
+  onlineMoveCallback: null,
 
   setPersonality: (personality) => set({ personality }),
   setGameMode: (mode) => set({ gameMode: mode }),
@@ -67,8 +81,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         moveCount: get().moveCount + 1,
         lastMove: index,
       });
+    } else if (gameMode === 'online') {
+      const { playerMark, onlineMoveCallback } = get();
+      if (currentPlayer !== playerMark) return;
+      onlineMoveCallback?.(index);
     }
-    // 'online' mode: handled in future phase
   },
 
   playMoveForPlayer: (index, player) => {
@@ -89,6 +106,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
+  applyRemoteMove: (index, player) => {
+    const { board, result } = get();
+    if (result.status !== 'playing') return;
+    if (board[index] !== null) return;
+
+    const newBoard = applyMove(board, index, player);
+    const newResult = evaluateBoard(newBoard);
+
+    set({
+      board: newBoard,
+      currentPlayer: opponent(player),
+      result: newResult,
+      moveCount: get().moveCount + 1,
+      lastMove: index,
+    });
+  },
+
   setAIThinking: (thinking) => set({ isAIThinking: thinking }),
 
   resetGame: () =>
@@ -101,4 +135,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastMove: null,
       startTime: Date.now(),
     }),
+
+  setOnlineState: (state) => set(state),
 }));

@@ -5,17 +5,19 @@ import { GradientBackground } from '../src/components/GradientBackground';
 import { Board } from '../src/components/Board';
 import { GameHeader } from '../src/components/GameHeader';
 import { LocalGameHeader } from '../src/components/LocalGameHeader';
+import { OnlineGameHeader } from '../src/components/OnlineGameHeader';
 import { AIAvatar } from '../src/components/AIAvatar';
 import { Button } from '../src/components/Button';
 import { CelebrationOverlay } from '../src/components/CelebrationOverlay';
 import { useGameStore } from '../src/store/game-store';
 import { useGameLoop } from '../src/hooks/useGameLoop';
 import { useLocalGameLoop } from '../src/hooks/useLocalGameLoop';
+import { useOnlineGame } from '../src/hooks/useOnlineGame';
 import { spacing } from '../src/theme/spacing';
 import { HUMAN_PLAYER } from '../src/constants';
 
 export default function GameScreen() {
-  const { result, personality, gameMode, resetGame } = useGameStore();
+  const { result, personality, gameMode, playerMark, resetGame } = useGameStore();
 
   // Redirect if AI mode with no personality selected
   useEffect(() => {
@@ -27,19 +29,32 @@ export default function GameScreen() {
   // Run the appropriate game loop
   useGameLoop();
   useLocalGameLoop();
+  const { sendMove, requestRematch } = useOnlineGame();
 
   const isGameOver = result.status !== 'playing';
 
   const celebrationType =
     result.status === 'win'
-      ? result.winner === HUMAN_PLAYER
-        ? 'win'
-        : 'lose'
+      ? (gameMode === 'online'
+          ? (result.winner === playerMark ? 'win' : 'lose')
+          : (result.winner === HUMAN_PLAYER ? 'win' : 'lose'))
       : result.status === 'draw'
         ? 'draw'
         : 'win';
 
-  const backDestination = gameMode === 'ai' ? '/difficulty' : '/';
+  const getBackDestination = () => {
+    if (gameMode === 'ai') return '/difficulty';
+    if (gameMode === 'online') return '/lobby';
+    return '/';
+  };
+
+  const handlePlayAgain = () => {
+    if (gameMode === 'online') {
+      requestRematch();
+    } else {
+      resetGame();
+    }
+  };
 
   return (
     <GradientBackground>
@@ -57,20 +72,22 @@ export default function GameScreen() {
         </View>
 
         {gameMode === 'ai' && <AIAvatar />}
-        {gameMode === 'ai' ? <GameHeader /> : <LocalGameHeader />}
+        {gameMode === 'ai' && <GameHeader />}
+        {gameMode === 'local' && <LocalGameHeader />}
+        {gameMode === 'online' && <OnlineGameHeader />}
         <Board />
 
         {isGameOver && (
           <View style={styles.gameOverActions}>
             <Button
               title="Play Again"
-              onPress={resetGame}
+              onPress={handlePlayAgain}
               size="lg"
               style={styles.playAgainButton}
             />
             <Button
               title={gameMode === 'ai' ? 'Change Opponent' : 'Back to Menu'}
-              onPress={() => router.replace(backDestination)}
+              onPress={() => router.replace(getBackDestination())}
               variant="secondary"
               size="md"
             />

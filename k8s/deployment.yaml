@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cheddr-api
+  namespace: cheddr
+  labels:
+    app: cheddr-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cheddr-api
+  template:
+    metadata:
+      labels:
+        app: cheddr-api
+    spec:
+      containers:
+        - name: cheddr-api
+          image: ghcr.io/kblack0610/cheddr-tictactoe-api:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DB_PATH
+              value: /data/cheddr.db
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 200m
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: cheddr-api-data
