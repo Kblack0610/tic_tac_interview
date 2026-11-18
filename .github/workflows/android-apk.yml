@@ -3,6 +3,8 @@ name: Android APK Build
 on:
   push:
     tags: ['v*']
+  pull_request:
+    paths: ['.github/workflows/android-apk.yml']
 
 jobs:
   build:
